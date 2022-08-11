@@ -4,11 +4,15 @@
 ConvexHull::ConvexHull(int &inputAmount) {
     isMissed = 1;
     amount = inputAmount;
-    preview = cv::Mat(windowLength, windowWidth, CV_8UC3, cv::Scalar(24, 24, 0));
+    preview = cv::Mat(windowLength, windowWidth, CV_8UC3, cv::Scalar(9, 1, 0));
     cout << "\033[1;37mGenerating Points...\033[0m" << endl;
     cv::imshow("output", preview);
     xCoord.resize(amount);
     yCoord.resize(amount);
+    thetaStack.resize(amount);
+    xConvex.resize(amount);
+    yConvex.resize(amount);
+    thetaConvex.resize(amount);
     int min = 0;
     int max;
     if (windowLength <= windowWidth) {
@@ -115,8 +119,6 @@ void ConvexHull::calculateTheta() {
         thetaStack[i] = atan2(originY - yCoord[i], xCoord[i] - originX);
         degreeStack[i] = thetaStack[i] * 180 / M_PI;
         point[i].setPosition(xCoord[i], yCoord[i], degreeStack[i]);
-        posXStack[i] = xCoord[i];
-        posYStack[i] = yCoord[i];
         if (thetaStack[i] != 0) {
             if (i % 3 == 0) {
                 tmp.copyTo(tmp2);
@@ -136,6 +138,7 @@ void ConvexHull::calculateTheta() {
 
 //-- Sort Dots by Their Theta
 void ConvexHull::sortbyTheta() {
+    cout << "\033[1;37mStart Sorting Points Around Origin Point by Their Theta...\033[0m" << endl;
     cv::Mat tmp;
     cv::Mat tmp2;
     preview.copyTo(tmp);
@@ -150,7 +153,7 @@ void ConvexHull::sortbyTheta() {
                 cv::line(tmp, cv::Point(xCoord[i + 1], yCoord[i + 1]), cv::Point(xCoord[i + 2], yCoord[i + 2]), cv::Scalar(0, 0, 255), 1, 8, 0);
             }
         }
-        for (int j = 0; j < amount - i; j++) {
+        for (int j = 0; j < amount - i - 1; j++) {
             if (point[j].accessTheta() > point[j + 1].accessTheta()) {
                 int tmpTheta = point[j + 1].accessTheta();
                 point[j + 1].setTheta(point[j].accessTheta());
@@ -173,17 +176,15 @@ void ConvexHull::sortbyTheta() {
                         isMissed *= -1;
                     }
                 }
-                if (j != originPlace) {
-                    cv::line(tmp2, cv::Point(xCoord[j], yCoord[j]), cv::Point(xCoord[j + 1], yCoord[j + 1]), cv::Scalar(50, 50, 50), 1, 8, 0);
-                    cv::circle(tmp2, cv::Point(xCoord[j], yCoord[j]), 1, cv::Scalar(0, 255, 0), -1, 8, 0);
-                    cv::circle(tmp2, cv::Point(xCoord[j + 1], yCoord[j + 1]), 1, cv::Scalar(0, 0, 255), -1, 8, 0);
-                    cv::line(tmp2, cv::Point(xCoord[j] - 5, yCoord[j]), cv::Point(xCoord[j] - 7, yCoord[j]), cv::Scalar(255, 255, 255), 1, 8, 0);
-                    cv::line(tmp2, cv::Point(xCoord[j] + 5, yCoord[j]), cv::Point(xCoord[j] + 7, yCoord[j]), cv::Scalar(255, 255, 255), 1, 8, 0);
-                    cv::line(tmp2, cv::Point(xCoord[j], yCoord[j] + 5), cv::Point(xCoord[j], yCoord[j] + 7), cv::Scalar(255, 255, 255), 1, 8, 0);
-                    cv::line(tmp2, cv::Point(xCoord[j], yCoord[j] - 5), cv::Point(xCoord[j], yCoord[j] - 7), cv::Scalar(255, 255, 255), 1, 8, 0);
-                    cv::imshow("output", tmp2);
-                }
-                cv::waitKey(1);
+                cv::line(tmp2, cv::Point(xCoord[j], yCoord[j]), cv::Point(xCoord[j + 1], yCoord[j + 1]), cv::Scalar(50, 50, 50), 1, 8, 0);
+                cv::circle(tmp2, cv::Point(xCoord[j], yCoord[j]), 1, cv::Scalar(0, 255, 0), -1, 8, 0);
+                cv::circle(tmp2, cv::Point(xCoord[j + 1], yCoord[j + 1]), 1, cv::Scalar(0, 0, 255), -1, 8, 0);
+                cv::line(tmp2, cv::Point(xCoord[j] - 5, yCoord[j]), cv::Point(xCoord[j] - 7, yCoord[j]), cv::Scalar(255, 255, 255), 1, 8, 0);
+                cv::line(tmp2, cv::Point(xCoord[j] + 5, yCoord[j]), cv::Point(xCoord[j] + 7, yCoord[j]), cv::Scalar(255, 255, 255), 1, 8, 0);
+                cv::line(tmp2, cv::Point(xCoord[j], yCoord[j] + 5), cv::Point(xCoord[j], yCoord[j] + 7), cv::Scalar(255, 255, 255), 1, 8, 0);
+                cv::line(tmp2, cv::Point(xCoord[j], yCoord[j] - 5), cv::Point(xCoord[j], yCoord[j] - 7), cv::Scalar(255, 255, 255), 1, 8, 0);
+                // cv::imshow("output", tmp2);
+                // cv::waitKey(1);
             }
         }
         cv::line(tmp, cv::Point(xCoord[i] - 5, yCoord[i]), cv::Point(xCoord[i] - 10, yCoord[i]), cv::Scalar(0, 255, 0), 1, 8, 0);
@@ -192,24 +193,16 @@ void ConvexHull::sortbyTheta() {
         cv::line(tmp, cv::Point(xCoord[i], yCoord[i] - 5), cv::Point(xCoord[i], yCoord[i] - 10), cv::Scalar(0, 255, 0), 1, 8, 0);
         cv::circle(tmp, cv::Point(xCoord[i], yCoord[i]), 1, cv::Scalar(255, 255, 255), -1, 8, 0);
     }
-    for (int i = 0; i < amount; i++) {
-        cout << "Pos : " << point[i].accessX() << " - " << point[i].accessY() << endl;
-    }
-    cv::waitKey(0);
     cv::destroyWindow("Sorting Dots by THeir Theta");
     preview.copyTo(tmp);
+    int colorValue;
     for (int i = 0; i < amount; i++) {
-        cv::circle(tmp, cv::Point(point[i].accessX(), point[i].accessY()), 1, cv::Scalar(0, 0, 255), -1, 8, 0);
+        colorValue = 200 * i / amount;
+        cv::circle(tmp, cv::Point(point[i].accessX(), point[i].accessY()), 1, cv::Scalar(0, 55 + colorValue, 0), -1, 8, 0);
         cv::imshow("output", tmp);
         cv::waitKey(1);
-        sleep_for(milliseconds(2));
-    }
-    for (int i = 0; i < amount; i++) {
-        cv::circle(tmp, cv::Point(point[i].accessX(), point[i].accessY()), 1, cv::Scalar(0, 255, 255), -1, 8, 0);
-        cv::imshow("output", tmp);
-        cv::waitKey(1);
-        sleep_for(milliseconds(8));
         progressBar(i + 1, "Processing");
+        sleep_for(milliseconds(2));
     }
     cv::destroyWindow("Processing");
     for (int i = 0; i < amount; i++) {
@@ -220,33 +213,6 @@ void ConvexHull::sortbyTheta() {
         progressBar(i + 1, "Preparing to Affect Convex Hull");
     }
     cv::destroyWindow("Preparing to Affect Convex Hull");
-    if (isMissed == -1) {
-        cout << "\033[1;31mSolution :\033[1;32m Checking Position of Missed Point...\033[0m" << endl;
-        int flag = 1;
-        int missedX,missedY;
-        for (int i = 0; i < amount; i++) {
-            if (posXStack[i] != point[i].accessX() && posYStack[i] != point[i].accessY()) {
-                cv::line(tmp, cv::Point(xCoord[i] - 5, yCoord[i]), cv::Point(xCoord[i] - 15, yCoord[i]), cv::Scalar(0, 0, 255), 1, 8, 0);
-                cv::line(tmp, cv::Point(xCoord[i] + 5, yCoord[i]), cv::Point(xCoord[i] + 15, yCoord[i]), cv::Scalar(0, 0, 255), 1, 8, 0);
-                cv::line(tmp, cv::Point(xCoord[i], yCoord[i] + 5), cv::Point(xCoord[i], yCoord[i] + 15), cv::Scalar(0, 0, 255), 1, 8, 0);
-                cv::line(tmp, cv::Point(xCoord[i], yCoord[i] - 5), cv::Point(xCoord[i], yCoord[i] - 15), cv::Scalar(0, 0, 255), 1, 8, 0);
-                flag *= -1;
-                missedX = posXStack[i];
-                missedY = posYStack[i];
-            }
-            cv::imshow("output", tmp);
-            cv::waitKey(1);
-        }
-        if (flag == 1) {
-            cout << "\033[1;31mError :\033[1;32m Nothing Found\033[0m" << endl;
-            cout << "\033[1;33mWarn :\033[1;32m as Machine Can't Find Any Missed Position, Debugger Will be Activated...\033[0m" << endl;
-            cout << "\033[1;96mDebugger :\033[1;32m Erasing Window That Has Extra-Created Point...\033[0m" << endl;
-            cv::imshow("output", preview);
-            cout << "\033[1;96mDebugger :\033[1;32m Extra-Created Point Removed \033[1;96mSuccessfully\033[0m" << endl;
-        } else if (flag == -1) {
-            cout << "\033[1;31mFount at : \033[0m" << missedX << " - " << missedY << endl;
-        }
-    }
     cout << "\033[1;37mSorting Done \033[1;32mSuccessfully\033[0m" << endl << endl;
 }
 
@@ -258,99 +224,162 @@ void ConvexHull::createConvexHull() {
     preview.copyTo(tmp);
     preview.copyTo(tmp2);
     preview.copyTo(tmp3);
+    cv::imshow("output", tmp3);
     cout << "\033[1;37mGenerating Convex Hull...\033[0m" << endl;
-    if (isMissed == -1) {
-        for (int i = 0; i < amount; i++) {
-            if (i > 0) {
-                if (point[i].accessX() == 0 && point[i].accessY() == 0 && point[i].accessTheta() == 0) {
-                    int tmpX = point[i - 1].accessX();
-                    int tmpY = point[i - 1].accessY();
-                    int tmpTheta = point[i - 1].accessTheta();
-                    point[i - 1].setX(point[i].accessX());
-                    point[i - 1].setY(point[i].accessY());
-                    point[i - 1].setTheta(point[i].accessTheta());
-                    point[i].setX(tmpX);
-                    point[i].setY(tmpY);
-                    point[i].setTheta(tmpTheta);
-                }
-            }
-        }
-    }
-    for (int i = 0; i <= amount; i++) {
-        cv::putText(tmp3, to_string(i), cv::Point(point[i].accessX() + 8, point[i].accessY() + 14), cv::FONT_HERSHEY_TRIPLEX, 0.4, cv::Scalar(0, 255, 255));
-        cv::imshow("output", tmp2);
+    for (int i = 0; i < amount; i++) {
+        cv::putText(tmp3, to_string(i) + ": " + to_string(point[i].accessX()) + "/" + to_string(point[i].accessY()), cv::Point(point[i].accessX() + 8, point[i].accessY() + 14), cv::FONT_HERSHEY_TRIPLEX, 0.3, cv::Scalar(255, 255, 255));
+        cv::imshow("output", tmp3);
         cv::waitKey(1);
     }
+    cv::waitKey(0);
+    int counter = 0;
+    int tmpAmount = amount;
     for (int i = 0; i < amount; i++) {
-        if (point[i].accessX() == 0 && point[i].accessY() == 0) {
-            cout << "\033[1;32m" << point[i].accessX() << " - " << point[i].accessY() << "\033[0m" << endl;
-        } else {
-            cout << "\033[1;36m" << point[i].accessX() << " - " << point[i].accessY() << "\033[0m" << endl;
-        }
-    }
-    int index = 0;
-    for (int counter = 0; counter < amount; counter++) {
-        progressBar(counter + 1, "Creating Convex Hull");
-        index = 0;
-        tmp3.copyTo(tmp2);
-        for (int i = 0; i < amount; i++) {
-            if (!(point[i].accessX() == 0 && point[i].accessY() == 0 && point[i].accessTheta() == 0) && !(point[i + 1].accessX() == 0 && point[i + 1].accessY() == 0 && point[i + 1].accessTheta() == 0) && !(point[i + 2].accessX() == 0 && point[i + 2].accessY() == 0 && point[i + 2].accessTheta() == 0)) {
-                tmp.copyTo(tmp2);
-                cv::circle(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), 10, cv::Scalar(255, 255, 0), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i].accessX() + 5, point[i].accessY()), cv::Point(point[i].accessX() + 15, point[i].accessY()), cv::Scalar(255, 100, 0), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i].accessX() - 5, point[i].accessY()), cv::Point(point[i].accessX() - 15, point[i].accessY()), cv::Scalar(255, 100, 0), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY() + 5), cv::Point(point[i].accessX(), point[i].accessY() + 15), cv::Scalar(255, 100, 0), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY() - 5), cv::Point(point[i].accessX(), point[i].accessY() - 15), cv::Scalar(255, 100, 0), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i + 1].accessX() + 5, point[i + 1].accessY()), cv::Point(point[i + 1].accessX() + 10, point[i + 1].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i + 1].accessX() - 5, point[i + 1].accessY()), cv::Point(point[i + 1].accessX() - 10, point[i + 1].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i + 1].accessX(), point[i + 1].accessY() + 5), cv::Point(point[i + 1].accessX(), point[i + 1].accessY() + 10), cv::Scalar(0, 100, 255), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i + 1].accessX(), point[i + 1].accessY() - 5), cv::Point(point[i + 1].accessX(), point[i + 1].accessY() - 10), cv::Scalar(0, 100, 255), 1, 8, 0);
-                // cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(0, 90, 90), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i + 2].accessX() + 5, point[i + 2].accessY()), cv::Point(point[i + 2].accessX() + 10, point[i + 2].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i + 2].accessX() - 5, point[i + 2].accessY()), cv::Point(point[i + 2].accessX() - 10, point[i + 2].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i + 2].accessX(), point[i + 2].accessY() + 5), cv::Point(point[i + 2].accessX(), point[i + 2].accessY() + 10), cv::Scalar(0, 100, 255), 1, 8, 0);
-                cv::line(tmp2, cv::Point(point[i + 2].accessX(), point[i + 2].accessY() - 5), cv::Point(point[i + 2].accessX(), point[i + 2].accessY() - 10), cv::Scalar(0, 100, 255), 1, 8, 0);
-                // cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 90, 90), 1, 8, 0);
-                if (determinant(i) <= 0) {
-                    cv::circle(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), 8, cv::Scalar(0, 180, 0), 1, 8, 0);
-                    cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(255, 0, 0), 1, 8, 0);
-                    cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 0, 255), 1, 8, 0);
-                    // cv::line(tmp2, cv::Point(point[i]))
-                    convexStackX[index] = point[i].accessX();
-                    convexStackY[index] = point[i].accessY();
-                    index++;
-                    cv::waitKey(0);
-                } else {
-                    convexStackX[index] = point[i].accessX();
-                    convexStackY[index] = point[i].accessY();
-                    index++;
-                    cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(0, 255, 0), 1, 8, 0);
-                    cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 255, 0), 1, 8, 0);
-                    cv::line(tmp, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(120, 120, 120), 1, 8, 0);
-                    cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(70, 70, 70), 1, 8, 0);
-                    cv::circle(tmp, cv::Point(point[i].accessX(), point[i].accessY()), 8, cv::Scalar(0, 180, 0), 1, 8, 0);
-                    cv::circle(tmp, cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), 8, cv::Scalar(0, 180, 0), 1, 8, 0);
-                    //- Pas the Clockwised Point
-                    i += 1;
-                }
-            }
-            cv::imshow("output", tmp2);
-            cv::waitKey(1); 
-        }
-
-        cv::line(tmp2, cv::Point(point[0].accessX(), point[0].accessY()), cv::Point(point[amount - 1].accessX(), point[amount - 1].accessY()), cv::Scalar(255, 0, 0), 1, 8, 0);
-        int size;
-        for (int i = 0; i < amount; i++) {
-            if (i > index) {
-                // amount = i;
-            } else {
-                size = i;
-                point[i].setX(convexStackX[i]);
-                point[i].setY(convexStackY[i]);
-            }
-        }
         tmp.copyTo(tmp2);
+        for (int j = 0; j < tmpAmount; j++) {
+            tmp2.copyTo(tmp3);
+            //- Suggestion Vectors
+            // if (point[i].accessTheta() != point)
+            cv::circle(tmp3, cv::Point(point[j].accessX(), point[j].accessY()), 10, cv::Scalar(100, 100, 0), 1, 8, 0);
+            cv::line(tmp3, cv::Point(point[j].accessX() + 5, point[j].accessY()), cv::Point(point[j].accessX() + 15, point[j].accessY()), cv::Scalar(255, 255, 255), 1, 8, 0);
+            cv::line(tmp3, cv::Point(point[j].accessX() - 5, point[j].accessY()), cv::Point(point[j].accessX() - 15, point[j].accessY()), cv::Scalar(255, 255, 255), 1, 8, 0);
+            cv::line(tmp3, cv::Point(point[j].accessX(), point[j].accessY() + 5), cv::Point(point[j].accessX(), point[j].accessY() + 15), cv::Scalar(255, 255, 255), 1, 8, 0);
+            cv::line(tmp3, cv::Point(point[j].accessX(), point[j].accessY() - 5), cv::Point(point[j].accessX(), point[j].accessY() - 15), cv::Scalar(255, 255, 255), 1, 8, 0);
+            cv::putText(tmp3, to_string(determinant(j)), cv::Point(point[j].accessX() + 11, point[j].accessY() + 19), cv::FONT_HERSHEY_TRIPLEX, 0.4, cv::Scalar(0, 255, 255));
+            if (j < amount - 1) {
+                cv::line(tmp3, cv::Point(point[j].accessX(), point[j].accessY()), cv::Point(point[j + 1].accessX(), point[j + 1].accessY()), cv::Scalar(255, 255, 255), 1, 8, 0);
+                // if (j > 0) {
+                    cv::line(tmp3, cv::Point(point[j + 1].accessX() + 5, point[j + 1].accessY()), cv::Point(point[j + 1].accessX() + 10, point[j + 1].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
+                    cv::line(tmp3, cv::Point(point[j + 1].accessX() - 5, point[j + 1].accessY()), cv::Point(point[j + 1].accessX() - 10, point[j + 1].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
+                    cv::line(tmp3, cv::Point(point[j + 1].accessX(), point[j + 1].accessY() + 5), cv::Point(point[j + 1].accessX(), point[j + 1].accessY() + 10), cv::Scalar(0, 100, 255), 1, 8, 0);
+                    cv::line(tmp3, cv::Point(point[j + 1].accessX(), point[j + 1].accessY() - 5), cv::Point(point[j + 1].accessX(), point[j + 1].accessY() - 10), cv::Scalar(0, 100, 255), 1, 8, 0);
+                // }
+            }
+            if (j < amount - 2) {
+                cv::line(tmp3, cv::Point(point[j].accessX(), point[j].accessY()), cv::Point(point[j + 2].accessX(), point[j + 2].accessY()), cv::Scalar(255, 255, 255), 1, 8, 0);
+                // if (j > 0) {
+                    cv::line(tmp3, cv::Point(point[j + 2].accessX() + 5, point[j + 2].accessY()), cv::Point(point[j + 2].accessX() + 10, point[j + 2].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
+                    cv::line(tmp3, cv::Point(point[j + 2].accessX() - 5, point[j + 2].accessY()), cv::Point(point[j + 2].accessX() - 10, point[j + 2].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
+                    cv::line(tmp3, cv::Point(point[j + 2].accessX(), point[j + 2].accessY() + 5), cv::Point(point[j + 2].accessX(), point[j + 2].accessY() + 10), cv::Scalar(0, 100, 255), 1, 8, 0);
+                    cv::line(tmp3, cv::Point(point[j + 2].accessX(), point[j + 2].accessY() - 5), cv::Point(point[j + 2].accessX(), point[j + 2].accessY() - 10), cv::Scalar(0, 100, 255), 1, 8, 0);
+                // }
+            }
+            if (determinant(j) < 0) {
+                if (j < amount - 1) {
+                    cv::line(tmp3, cv::Point(point[j].accessX(), point[j].accessY()), cv::Point(point[j + 1].accessX(), point[j + 1].accessY()), cv::Scalar(0, 200, 0));
+                    cv::line(tmp2, cv::Point(point[j].accessX(), point[j].accessY()), cv::Point(point[j + 1].accessX(), point[j + 1].accessY()), cv::Scalar(255, 255, 0));
+                    cv::circle(tmp2, cv::Point(point[j + 1].accessX(), point[j + 1].accessY()), 10, cv::Scalar(0, 255, 255), 1, 8, 0);
+                    cout << "blink : <--" << endl;
+                    if (counter - amount -2) {
+                        xConvex[counter] = point[j + 1].accessX();
+                        yConvex[counter] = point[j + 1].accessY();
+                        // xConvex.insert(counter, point[j + 1].accessX());
+                        // xConvex.insert(point[j + 1].accessX());
+                        // yConvex.insert(counter ,point[j + 1].accessY());
+                        // thetaConvex.insert(counter ,point[j + 1].accessTheta());
+                        cout << "Index\033[1;32m "<< counter << " : \033[1;36m(" << point[j + 1].accessX() << "|" << point[j + 1].accessY() << ") \033[0mHas Been Stored" << endl;
+                        cout << "Index\033[1;32m "<< counter << " : \033[1;36m(" << xConvex[counter] << "|" << yConvex[counter] << ") \033[0mHas Been Stored" << endl;
+                    }
+                    counter++;
+                }
+            } else if (determinant(j) > 0) {
+                if (j < amount - 2) {
+                    cv::line(tmp3, cv::Point(point[j].accessX(), point[j].accessY()), cv::Point(point[j + 2].accessX(), point[j + 2].accessY()), cv::Scalar(0, 0, 200));
+                    cv::line(tmp2, cv::Point(point[j].accessX(), point[j].accessY()), cv::Point(point[j + 2].accessX(), point[j + 2].accessY()), cv::Scalar(255, 255, 0));
+                    cv::circle(tmp2, cv::Point(point[j + 2].accessX(), point[j + 2].accessY()), 10, cv::Scalar(0, 255, 255), 1, 8, 0);
+                    cv::circle(tmp2, cv::Point(point[j + 1].accessX(), point[j + 1].accessY()), 10, cv::Scalar(0, 0, 255), 1, 8, 0);
+                    cout << "blink : -->" << endl;
+                    if (counter < amount - 2) {
+                        xConvex[counter] = point[j + 2].accessX();
+                        yConvex[counter] = point[j + 2].accessY();
+                        // xConvex.insert(counter ,point[j + 2].accessX());
+                        // yConvex.insert(counter ,point[j + 2].accessY());
+                        // thetaConvex.insert(counter ,point[j + 2].accessTheta());
+                        cout << "Index\033[1;32m "<< counter << " : \033[1;36m(" << point[j + 2].accessX() << "|" << point[j + 2].accessY() << ") \033[0mHas Been Stored" << endl;
+                        cout << "Index\033[1;32m "<< counter << " : \033[1;36m(" << xConvex[counter] << "|" << yConvex[counter] << ") \033[0mHas Been Stored" << endl;
+                    }
+                    j++;
+                    counter++;
+                }
+            } else if (determinant(j) == 0) {
+
+            }
+            // cout << "Index\033[1;32m "<< counter - 1 << " : \033[1;36m(" << xConvex[j] << "|" << yConvex[j] << ") \033[0mHas Been Stored" << endl;
+            imshow("output", tmp3);
+            cv::waitKey(1);
+        }
+        for (int j = 0; j < counter; j++) {
+            point[j].setX(xConvex[j]);
+            point[j].setY(yConvex[j]);
+        }
+        tmpAmount = counter;
+        counter = 0;
+        cv::waitKey(1);
+        tmp.copyTo(tmp2);
+        // imshow("output", tmp2);
     }
+
+
+    
+    // int index = 0;
+    // for (int counter = 0; counter < amount; counter++) {
+    //     progressBar(counter + 1, "Creating Convex Hull");
+    //     index = 0;
+    //     tmp3.copyTo(tmp2);
+    //     for (int i = 0; i < amount; i++) {
+    //         if (!(point[i].accessX() == 0 && point[i].accessY() == 0 && point[i].accessTheta() == 0) && !(point[i + 1].accessX() == 0 && point[i + 1].accessY() == 0 && point[i + 1].accessTheta() == 0) && !(point[i + 2].accessX() == 0 && point[i + 2].accessY() == 0 && point[i + 2].accessTheta() == 0)) {
+    //             tmp.copyTo(tmp2);
+    //             cv::circle(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), 10, cv::Scalar(255, 255, 0), 1, 8, 0);
+    //             cv::line(tmp2, cv::Point(point[i].accessX() + 5, point[i].accessY()), cv::Point(point[i].accessX() + 15, point[i].accessY()), cv::Scalar(255, 100, 0), 1, 8, 0);
+    //             cv::line(tmp2, cv::Point(point[i].accessX() - 5, point[i].accessY()), cv::Point(point[i].accessX() - 15, point[i].accessY()), cv::Scalar(255, 100, 0), 1, 8, 0);
+    //             cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY() + 5), cv::Point(point[i].accessX(), point[i].accessY() + 15), cv::Scalar(255, 100, 0), 1, 8, 0);
+    //             cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY() - 5), cv::Point(point[i].accessX(), point[i].accessY() - 15), cv::Scalar(255, 100, 0), 1, 8, 0);
+    //             cv::line(tmp2, cv::Point(point[i + 1].accessX() + 5, point[i + 1].accessY()), cv::Point(point[i + 1].accessX() + 10, point[i + 1].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
+    //             cv::line(tmp2, cv::Point(point[i + 1].accessX() - 5, point[i + 1].accessY()), cv::Point(point[i + 1].accessX() - 10, point[i + 1].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
+    //             cv::line(tmp2, cv::Point(point[i + 1].accessX(), point[i + 1].accessY() + 5), cv::Point(point[i + 1].accessX(), point[i + 1].accessY() + 10), cv::Scalar(0, 100, 255), 1, 8, 0);
+    //             cv::line(tmp2, cv::Point(point[i + 1].accessX(), point[i + 1].accessY() - 5), cv::Point(point[i + 1].accessX(), point[i + 1].accessY() - 10), cv::Scalar(0, 100, 255), 1, 8, 0);
+    //             // cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(0, 90, 90), 1, 8, 0);
+    //             // cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 90, 90), 1, 8, 0);
+    //             if (determinant(i) <= 0) {
+    //                 cv::circle(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), 8, cv::Scalar(0, 180, 0), 1, 8, 0);
+    //                 cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(255, 0, 0), 1, 8, 0);
+    //                 cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 0, 255), 1, 8, 0);
+    //                 // cv::line(tmp2, cv::Point(point[i]))
+    //                 convexStackX[index] = point[i].accessX();
+    //                 convexStackY[index] = point[i].accessY();
+    //                 index++;
+    //                 cv::waitKey(0);
+    //             } else {
+    //                 convexStackX[index] = point[i].accessX();
+    //                 convexStackY[index] = point[i].accessY();
+    //                 index++;
+    //                 cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(0, 255, 0), 1, 8, 0);
+    //                 cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 255, 0), 1, 8, 0);
+    //                 cv::line(tmp, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(120, 120, 120), 1, 8, 0);
+    //                 cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(70, 70, 70), 1, 8, 0);
+    //                 cv::circle(tmp, cv::Point(point[i].accessX(), point[i].accessY()), 8, cv::Scalar(0, 180, 0), 1, 8, 0);
+    //                 cv::circle(tmp, cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), 8, cv::Scalar(0, 180, 0), 1, 8, 0);
+    //                 //- Pas the Clockwised Point
+    //                 i += 1;
+    //             }
+    //         }
+    //         cv::imshow("output", tmp2);
+    //         cv::waitKey(1); 
+    //     }
+
+    //     cv::line(tmp2, cv::Point(point[0].accessX(), point[0].accessY()), cv::Point(point[amount - 1].accessX(), point[amount - 1].accessY()), cv::Scalar(255, 0, 0), 1, 8, 0);
+    //     int size;
+    //     for (int i = 0; i < amount; i++) {
+    //         if (i > index) {
+    //             // amount = i;
+    //         } else {
+    //             size = i;
+    //             point[i].setX(convexStackX[i]);
+    //             point[i].setY(convexStackY[i]);
+    //         }
+    //     }
+    //     tmp.copyTo(tmp2);
+    // }
     cv::destroyWindow("Creating Convex Hull");
     cout << "\033[1;37mConvex Hull Has Been Generated \033[1;32mSuccessfully\033[0m" << endl;
 }
@@ -404,10 +433,6 @@ int ConvexHull::determinant(int i) {
     int wX = point[i + 2].accessX() - point[i].accessX();
     int wY = point[i + 2].accessY() - point[i].accessY();
     int output = vX * wY - vY * wX;
-    // cout << i + 1 << " -> " << i + 2 << " has " << "Det :\033[1;95m " << output << "\033[0m" << endl;
-    // cout << "\033[1;33mCords of " << i << " --> \033[0m" << point[i].accessX() << " - " << point[i].accessY() << endl;
-    // cout << "\033[1;33mCords of " << i + 1 << " --> \033[0m" << point[i + 1].accessX() << " - " << point[i + 1].accessY() << endl;
-    // cout << "\033[1;33mCords of " << i + 2 << " --> \033[0m" << point[i + 2].accessX() << " - " << point[i + 2].accessY() << endl;
     return output;
 }
 

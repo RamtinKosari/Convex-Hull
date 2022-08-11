@@ -9,6 +9,7 @@
 #include <thread>
 #include <random>
 #include <string>
+#include <vector>
 
 using namespace std;
 using namespace chrono;
@@ -50,14 +51,17 @@ class ConvexHull : public Points {
         Points point[5000];
         cv::Mat preview;
         cv::Mat bar;
-        vector <int> xCoord;
-        vector <int> yCoord;
-        double thetaStack[5000];
+        vector <double> xCoord;
+        vector <double> yCoord;
+        vector <double> thetaStack;
+        vector <int> xConvex;
+        vector <double> yConvex;
+        vector <double> thetaConvex;
         double degreeStack[5000];
         int posXStack[5000];
         int posYStack[5000];
-        int convexStackX[5000];
-        int convexStackY[5000];
+        int tmpx[300];
+        int tmpy[300];
         int amount;
         int originX;
         int originY;
