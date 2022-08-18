@@ -175,7 +175,29 @@ void ConvexHull::sortbyTheta() {
                 // cv::imshow("output", tmp2);
                 // cv::waitKey(1);
             } else if (point[j].accessTheta() == point[j + 1].accessTheta()) {
-
+                int distFirst = sqrt(pow(point[j].accessX() - originX, 2) + pow(point[j].accessY() - originY, 2));
+                int distSecond = sqrt(pow(point[j + 1].accessX() - originX, 2) + pow(point[j + 1].accessY() - originY, 2));
+                if (distFirst > distSecond) {
+                    int tmpTheta = point[j + 1].accessTheta();
+                    point[j + 1].setTheta(point[j].accessTheta());
+                    point[j].setTheta(tmpTheta);
+                    int tmpX = point[j + 1].accessX();
+                    point[j + 1].setX(point[j].accessX());
+                    point[j].setX(originX);
+                    int tmpY = point[j + 1].accessY();
+                    point[j + 1].setY(point[j].accessY());
+                    point[j].setY(originY);
+                } else if (distFirst < distSecond) {
+                    int tmpTheta = point[j].accessTheta();
+                    point[j].setTheta(point[j + 1].accessTheta());
+                    point[j + 1].setTheta(tmpTheta);
+                    int tmpX = point[j].accessX();
+                    point[j].setX(point[j + 1].accessX());
+                    point[j + 1].setX(originX);
+                    int tmpY = point[j].accessY();
+                    point[j].setY(point[j + 1].accessY());
+                    point[j + 1].setY(originY);
+                }
             }
         }
         cv::line(tmp, cv::Point(xCoord[i] - 5, yCoord[i]), cv::Point(xCoord[i] - 10, yCoord[i]), cv::Scalar(0, 255, 0), 1, 8, 0);
@@ -355,25 +377,28 @@ void ConvexHull::createConvexHull() {
                 xConvex.pop_back();
                 yConvex.pop_back();
                 counter--;
-            } else if (point[i].accessTheta() == point[i - 1].accessTheta()) {
-                cv::rectangle(preview, cv::Point(point[i].accessX() + 5, point[i].accessY() + 5), cv::Point(point[i].accessX() - 5, point[i].accessY() - 5), cv::Scalar(0, 150, 190), 1, 8, 0);
-                cv::line(preview, cv::Point(point[i].accessX() + 5, point[i].accessY()), cv::Point(point[i].accessX() + 12, point[i].accessY()), cv::Scalar(0, 255, 255), 1, 16, 0);
-                cv::line(preview, cv::Point(point[i].accessX() - 5, point[i].accessY()), cv::Point(point[i].accessX() - 12, point[i].accessY()), cv::Scalar(0, 255, 255), 1, 16, 0);
-                cv::line(preview, cv::Point(point[i].accessX(), point[i].accessY() + 5), cv::Point(point[i].accessX(), point[i].accessY() + 12), cv::Scalar(0, 255, 255), 1, 16, 0);
-                cv::line(preview, cv::Point(point[i].accessX(), point[i].accessY() - 5), cv::Point(point[i].accessX(), point[i].accessY() - 12), cv::Scalar(0, 255, 255), 1, 16, 0);
-                double height = 22 * sin(M_PI / 3);
-                cv::line(tmp2, cv::Point(point[i].accessX() - 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX() + 11, point[i].accessY() - height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
-                cv::line(tmp2, cv::Point(point[i].accessX() - 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX(), point[i].accessY() + height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
-                cv::line(tmp2, cv::Point(point[i].accessX() + 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX(), point[i].accessY() + height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
-                cv::imshow("output", tmp2);
-                cv::waitKey(1);
-                cout << "err" << endl;
-                // int dist1 = sqrt();
-                // int dist2;
-                // counter++;
-                xConvex.push_back(point[i].accessX());
-                yConvex.push_back(point[i].accessY());
+            } else {
+                break;
             }
+            // else if (point[i].accessTheta() == point[i - 1].accessTheta()) {
+            //     cv::rectangle(preview, cv::Point(point[i].accessX() + 5, point[i].accessY() + 5), cv::Point(point[i].accessX() - 5, point[i].accessY() - 5), cv::Scalar(0, 150, 190), 1, 8, 0);
+            //     cv::line(preview, cv::Point(point[i].accessX() + 5, point[i].accessY()), cv::Point(point[i].accessX() + 12, point[i].accessY()), cv::Scalar(0, 255, 255), 1, 16, 0);
+            //     cv::line(preview, cv::Point(point[i].accessX() - 5, point[i].accessY()), cv::Point(point[i].accessX() - 12, point[i].accessY()), cv::Scalar(0, 255, 255), 1, 16, 0);
+            //     cv::line(preview, cv::Point(point[i].accessX(), point[i].accessY() + 5), cv::Point(point[i].accessX(), point[i].accessY() + 12), cv::Scalar(0, 255, 255), 1, 16, 0);
+            //     cv::line(preview, cv::Point(point[i].accessX(), point[i].accessY() - 5), cv::Point(point[i].accessX(), point[i].accessY() - 12), cv::Scalar(0, 255, 255), 1, 16, 0);
+            //     double height = 22 * sin(M_PI / 3);
+            //     cv::line(tmp2, cv::Point(point[i].accessX() - 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX() + 11, point[i].accessY() - height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
+            //     cv::line(tmp2, cv::Point(point[i].accessX() - 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX(), point[i].accessY() + height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
+            //     cv::line(tmp2, cv::Point(point[i].accessX() + 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX(), point[i].accessY() + height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
+            //     cv::imshow("output", tmp2);
+            //     cv::waitKey(1);
+            //     cout << "err" << endl;
+            //     // int dist1 = sqrt();
+            //     // int dist2;
+            //     // counter++;
+            //     xConvex.push_back(point[i].accessX());
+            //     yConvex.push_back(point[i].accessY());
+            // }
             cv::waitKey(1);
         }
         imshow("output", tmp2);
