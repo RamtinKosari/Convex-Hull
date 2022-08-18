@@ -1,8 +1,8 @@
 #include "ConvexHull.hpp"
 
 int dotsMaxAmount = 4000;
-int windowLength = 800;
-int windowWidth = 800;
+int windowLength = 1000;
+int windowWidth = 1000;
 double half = 0.5;
 int distributionX = windowLength * half;
 int distributionY = windowWidth * half;

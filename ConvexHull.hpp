@@ -51,23 +51,19 @@ class ConvexHull : public Points {
         Points point[5000];
         cv::Mat preview;
         cv::Mat bar;
-        vector <double> xCoord;
-        vector <double> yCoord;
+        vector <int> xCoord;
+        vector <int> yCoord;
         vector <double> thetaStack;
         vector <int> xConvex;
-        vector <double> yConvex;
+        vector <int> yConvex;
         vector <double> thetaConvex;
         double degreeStack[5000];
-        int posXStack[5000];
-        int posYStack[5000];
-        int tmpx[300];
-        int tmpy[300];
         int amount;
         int originX;
         int originY;
         int originPlace;
-        int isMissed;
-        int counterClockwise;
+        int selectedX;
+        int selectedY;
     public:
         ConvexHull(int &);
         ConvexHull(string &, int &);
@@ -75,7 +71,7 @@ class ConvexHull : public Points {
         void calculateTheta();
         void sortbyTheta();
         void createConvexHull();
-        int determinant(int);
+        long long int determinant(int, int, int, int, int, int);
         void resetStack();
         void progressBar(int, string);
 };
