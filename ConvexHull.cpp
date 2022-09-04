@@ -28,7 +28,7 @@ ConvexHull::ConvexHull(int &inputAmount) {
     for (int i = 0; i < amount; i++) {
         amountOfGenerated = i + 1;
         if (cv::waitKey(1) == int('q')) {
-            cout << "\033[1;37mProccess Has been \033[1;31mTerminated\033[1;37m" << endl;
+            cout << "\033[1;37mProcess Has been \033[1;31mTerminated\033[1;37m" << endl;
             break;
         }
         int x = distr(eng);
@@ -64,7 +64,73 @@ ConvexHull::ConvexHull(int &inputAmount) {
 
 //-- Constructor to Create Dots on Picture
 ConvexHull::ConvexHull(string &inputPath, int &inputScale) {
-    cout << "string" << endl;
+    cout << "\033[1;37mLoading Image...\033[0m" << endl;
+    preview = cv::imread(inputPath, cv::IMREAD_GRAYSCALE);
+    scale = inputScale;
+    length = preview.cols;
+    width = preview.rows;
+    cout << "\033[1;37mImage Loaded \033[1;32mSuccessfully\033[0m" << endl << endl;
+}
+
+//-- Affect Sobel on Blured Frame
+void ConvexHull::sobel() {
+    preview.copyTo(process);
+    // cv::resize(process, process, cv::Size(preview.cols / 2, preview.rows / 2), cv::INTER_LINEAR);
+    cout << "\033[1;37mAffecting Sobel on Loaded Image\033[0m" << endl;
+    double xF[3][3] = {
+        //-- Filter 1
+        // -2, 1, 0,
+        // 1, 0, 1,
+        // 0, 1, -2
+        //-- Filter 2
+        -3.5, 1, 0,
+        1, 0, 1,
+        0, 1, -3.5
+        // -2, 0, -2,
+        // 2, -4 , 2,
+        // -2, 0, -2
+    };
+    double yF[3][3] = {
+        //-- Filter 1
+        // 0, 1, -2,
+        // 1, 0, 1,
+        // -2, 1, 0
+
+        //-- Filter 2
+        0, 1, -3.5,
+        1, 0, 1,
+        -3.5, 1, 0
+        // 2, -2, 2,
+        // 0, -4, 0,
+        // 2, -2, 2
+    };
+    for (int i = 1; i < width - 4; i++) {
+        for (int j = 1; j < length - 4; j++) {
+            double xSum = 0;
+            double ySum = 0;
+            for (int x = 0; x < 3; x++) {
+                for (int y = 0; y < 3; y++) {
+                    xSum += xF[x][y] * process.at<uchar>(x + i, y + j);
+                    ySum += yF[x][y] * process.at<uchar>(x + i, y + j);
+                }
+            }
+            double sum = sqrt(pow(xSum, 2) + pow(ySum, 2));
+            if (sum > 255) {
+                sum = 255;
+            }
+            process.at<uchar>(i, j) = sum;
+        }
+        if (i % 5 == 0) {
+            cv::imshow("x", process);
+            cv::waitKey(1);
+        }
+    }
+    // for (int  i = 0; i < width; i++) {
+    //     for (int j = 0; i < length; j++)
+    // }
+    cout << "\033[1;37mSobel Affected \033[1;32mSuccessfully\033[0m" << endl << endl;
+    cv::imshow("Thread 3", process);
+    cv::waitKey(0);
 }
 
 //-- Method to Find Origin Point
@@ -109,7 +175,7 @@ void ConvexHull::findLowestPoint() {
 
 //-- Calculate Dots Angle from Horizental Axis of Origin Dot
 void ConvexHull::calculateTheta() {
-    cout << "\033[1;37mProccessing Positions to Start Sorting Theta...\033[0m" << endl;
+    cout << "\033[1;37mProcessing Positions to Start Sorting Theta...\033[0m" << endl;
     cv::Mat tmp;
     preview.copyTo(tmp);
     cv::imshow("output", tmp);
@@ -145,6 +211,9 @@ void ConvexHull::sortbyTheta() {
     cv::Mat tmp2;
     preview.copyTo(tmp);
     cv::imshow("output", tmp);
+    //-------------------
+    //--| Bubble Sort |--
+    //-------------------
     for (int i = 0; i < amount; i++) {
         progressBar(i + 1, "Sorting Dots by THeir Theta");
         tmp.copyTo(tmp2);
@@ -181,20 +250,16 @@ void ConvexHull::sortbyTheta() {
                     int tmpTheta = point[j + 1].accessTheta();
                     point[j + 1].setTheta(point[j].accessTheta());
                     point[j].setTheta(tmpTheta);
-                    int tmpX = point[j + 1].accessX();
                     point[j + 1].setX(point[j].accessX());
                     point[j].setX(originX);
-                    int tmpY = point[j + 1].accessY();
                     point[j + 1].setY(point[j].accessY());
                     point[j].setY(originY);
                 } else if (distFirst < distSecond) {
                     int tmpTheta = point[j].accessTheta();
                     point[j].setTheta(point[j + 1].accessTheta());
                     point[j + 1].setTheta(tmpTheta);
-                    int tmpX = point[j].accessX();
                     point[j].setX(point[j + 1].accessX());
                     point[j + 1].setX(originX);
-                    int tmpY = point[j].accessY();
                     point[j].setY(point[j + 1].accessY());
                     point[j + 1].setY(originY);
                 }
@@ -206,26 +271,16 @@ void ConvexHull::sortbyTheta() {
         cv::line(tmp, cv::Point(xCoord[i], yCoord[i] - 5), cv::Point(xCoord[i], yCoord[i] - 10), cv::Scalar(0, 255, 0), 1, 8, 0);
         cv::circle(tmp, cv::Point(xCoord[i], yCoord[i]), 1, cv::Scalar(255, 255, 255), -1, 8, 0);
     }
-    //-- Sort Same Theta in Stack According to Distance from Origin Point
-    // for (int i = 0; i < amount; i++) {
-
-    // }
     cv::destroyWindow("Sorting Dots by THeir Theta");
     preview.copyTo(tmp);
     int colorValue;
     for (int i = 0; i < amount; i++) {
         colorValue = 200 * i / amount;
         cv::circle(tmp, cv::Point(point[i].accessX(), point[i].accessY()), 1, cv::Scalar(0, 55 + colorValue, 0), -1, 8, 0);
-        if (i < amount - 1) {   
-            cv::line(tmp, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(60, 60, 60), 1, 8, 0);
-        }
-        if (i < amount - 2) {
-            cv::line(tmp, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(60, 60, 60), 1, 8, 0);
-        }
         cv::imshow("output", tmp);
         cv::waitKey(1);
         progressBar(i + 1, "Processing");
-        sleep_for(milliseconds(2));
+        sleep_for(milliseconds(1));
     }
     cv::destroyWindow("Processing");
     cv::destroyWindow("Preparing to Affect Convex Hull");
@@ -323,46 +378,11 @@ void ConvexHull::createConvexHull() {
         cv::line(tmp2, cv::Point(point[i].accessX() + signX * 40, point[i].accessY() + signY * 40), cv::Point(point[i].accessX() + signX * 110, point[i].accessY() + signY * 40), cv::Scalar(255, 255, 255), 1, 8, 0);
         cv::putText(tmp2, "X : " + to_string(point[i].accessX()), cv::Point(point[i].accessX() + signX * 120 * txtPosX, point[i].accessY() + signY * 34 * txtPosY), cv::FONT_HERSHEY_DUPLEX, 0.4, cv::Scalar(255, 220, 120));
         cv::putText(tmp2, "Y : " + to_string(point[i].accessY()), cv::Point(point[i].accessX() + signX * 120 * txtPosX, point[i].accessY() + signY * 52 * txtPosY), cv::FONT_HERSHEY_DUPLEX, 0.4, cv::Scalar(255, 220, 120));
-        //-- Determinant
-        // int det = determinant(point[i].accessX(), point[i].accessY(), xConvex[counter], yConvex[counter], xConvex[counter - 1], yConvex[counter - 1]);
-        int det = determinant(point[i].accessX(), point[i].accessY(), point[i - 1].accessX(), point[i - 1].accessY(), point[i - 2].accessX(), point[i - 2].accessY());
-        cout << "det " << det << endl;
+        //-------------------------------
+        //--| Calculating Convex Hull |--
+        //-------------------------------
         cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i - 1].accessX(), point[i - 1].accessY()), cv::Scalar(0, 140, 200), 1, 8, 0);
         cv::line(tmp2, cv::Point(point[i - 2].accessX(), point[i - 2].accessY()), cv::Point(point[i - 1].accessX(), point[i - 1].accessY()), cv::Scalar(0, 140, 200), 1, 8, 0);
-        // cv::line(tmp2, cv::Point(xConvex[counter - 1], yConvex[counter - 1]), cv::Point(xConvex[counter], yConvex[counter]), cv::Scalar(30, 160, 150), 1, 8, 0);
-        // cv::line(tmp2, cv::Point(xConvex[counter - 1], yConvex[counter - 1]), cv::Point(xConvex[counter - 2], yConvex[counter - 2]), cv::Scalar(255, 255, 255), 1, 8, 0);
-        // 210, 170, 150
-        //-- Push to or Pop from Convex Stack
-        // while (true) {
-        //     if (determinant(point[i].accessX(), point[i].accessY(), xConvex[counter], yConvex[counter], xConvex[counter - 1], yConvex[counter - 1]) > 0) {
-        //         // cv::line(tmp2, cv::Point(xConvex[counter], yConvex[counter]), cv::Point(point[i].accessX(), point[i].accessY()), cv::Scalar(0, 255, 0), 1, 8, 0);
-        //         xConvex.push_back(point[i].accessX());
-        //         yConvex.push_back(point[i].accessY());
-        //         cout << "added point " << i << " to convex" << endl;
-        //         counter++;
-        //         break;
-        //     } else if (determinant(point[i].accessX(), point[i].accessY(), xConvex[counter], yConvex[counter], xConvex[counter - 1], yConvex[counter - 1]) < 0) {
-        //         xConvex.pop_back();
-        //         yConvex.pop_back();
-        //         cout << "removed point " << i << " to convex" << endl;
-        //         xConvex.push_back(point[i].accessX());
-        //         xConvex.push_back(point[i].accessY());
-        //         break;
-        //     } else {
-        //         break;
-        //     }
-        // }
-        // while (true) {
-        //     det = determinant(point[i].accessX(), point[i].accessY(), xConvex[counter], yConvex[counter], xConvex[counter - 1], yConvex[counter - 1]);
-        //     if (det < 0 )
-        // }
-        // xConvex.push_back(point[i].accessX());
-        // yConvex.push_back(point[i].accessY());
-        // counter++;
-        // while (determinant(point[i].accessX(), point[i].accessY(), xConvex[counter], yConvex[counter], xConvex[counter - 1], yConvex[counter - 1]) < 0) {
-        //     xConvex.pop_back();
-        //     yConvex.pop_back();
-        // }
         while (true) {
             cv::line(tmp2, cv::Point(xConvex[counter], yConvex[counter]), cv::Point(xConvex[counter - 1], yConvex[counter - 1]), cv::Scalar(255, 255, 0), 1, 8, 0);
             cv::line(tmp2, cv::Point(xConvex[counter - 2], yConvex[counter - 2]), cv::Point(xConvex[counter - 1], yConvex[counter - 1]), cv::Scalar(255, 255, 0), 1, 8, 0);
@@ -380,35 +400,15 @@ void ConvexHull::createConvexHull() {
             } else {
                 break;
             }
-            // else if (point[i].accessTheta() == point[i - 1].accessTheta()) {
-            //     cv::rectangle(preview, cv::Point(point[i].accessX() + 5, point[i].accessY() + 5), cv::Point(point[i].accessX() - 5, point[i].accessY() - 5), cv::Scalar(0, 150, 190), 1, 8, 0);
-            //     cv::line(preview, cv::Point(point[i].accessX() + 5, point[i].accessY()), cv::Point(point[i].accessX() + 12, point[i].accessY()), cv::Scalar(0, 255, 255), 1, 16, 0);
-            //     cv::line(preview, cv::Point(point[i].accessX() - 5, point[i].accessY()), cv::Point(point[i].accessX() - 12, point[i].accessY()), cv::Scalar(0, 255, 255), 1, 16, 0);
-            //     cv::line(preview, cv::Point(point[i].accessX(), point[i].accessY() + 5), cv::Point(point[i].accessX(), point[i].accessY() + 12), cv::Scalar(0, 255, 255), 1, 16, 0);
-            //     cv::line(preview, cv::Point(point[i].accessX(), point[i].accessY() - 5), cv::Point(point[i].accessX(), point[i].accessY() - 12), cv::Scalar(0, 255, 255), 1, 16, 0);
-            //     double height = 22 * sin(M_PI / 3);
-            //     cv::line(tmp2, cv::Point(point[i].accessX() - 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX() + 11, point[i].accessY() - height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
-            //     cv::line(tmp2, cv::Point(point[i].accessX() - 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX(), point[i].accessY() + height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
-            //     cv::line(tmp2, cv::Point(point[i].accessX() + 11, point[i].accessY() - height * 0.5), cv::Point(point[i].accessX(), point[i].accessY() + height * 0.5), cv::Scalar(0, 255, 255), 1, 16, 0);
-            //     cv::imshow("output", tmp2);
-            //     cv::waitKey(1);
-            //     cout << "err" << endl;
-            //     // int dist1 = sqrt();
-            //     // int dist2;
-            //     // counter++;
-            //     xConvex.push_back(point[i].accessX());
-            //     yConvex.push_back(point[i].accessY());
-            // }
             cv::waitKey(1);
         }
         imshow("output", tmp2);
         cv::waitKey(1);
     }
-    for (int i = 0; i < xConvex.size(); i++) {
-        cout << "\033[1;33m" << xConvex[i] << " - " << yConvex[i] << "\033[0m" << endl;
-    }
     cv::waitKey(1);
-    //-- Showing Result
+    //-----------------------
+    //--| Showing Resault |--
+    //-----------------------
     preview.copyTo(tmp2);
     for (int i = 1; i < xConvex.size(); i++) {
         cv::line(tmp2, cv::Point(xConvex[i], yConvex[i]), cv::Point(xConvex[i - 1], yConvex[i - 1]), cv::Scalar(0, 100, 255), 1, 8, 0);
@@ -429,86 +429,6 @@ void ConvexHull::createConvexHull() {
         cv::imshow("output", tmp2);
         cv::waitKey(1);
     }
-
-    // cv::waitKey(0);
-    // int counter = 1;
-    // xConvex.push_back(point[0].accessX());
-    // yConvex.push_back(point[0].accessY());
-    // xConvex.push_back(point[1].accessX());
-    // yConvex.push_back(point[1].accessY());
-    // xConvex.push_back(point[2].accessX());
-    // yConvex.push_back(point[2].accessY());
-    
-    // for (int i = 0; i < amount - 2; i++) {
-    //     tmp.copyTo(tmp2);
-    //     //- Point First
-        
-    //     //- Point After First
-    //     cv::putText(tmp2, "Second", cv::Point(point[i + 2].accessX() + 10, point[i + 2].accessY() + 16), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(190, 150, 130));
-    //     cv::line(tmp2, cv::Point(point[i + 2].accessX() + 5, point[i + 2].accessY()), cv::Point(point[i + 2].accessX() + 10, point[i + 2].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
-    //     cv::line(tmp2, cv::Point(point[i + 2].accessX() - 5, point[i + 2].accessY()), cv::Point(point[i + 2].accessX() - 10, point[i + 2].accessY()), cv::Scalar(0, 100, 255), 1, 8, 0);
-    //     cv::line(tmp2, cv::Point(point[i + 2].accessX(), point[i + 2].accessY() + 5), cv::Point(point[i + 2].accessX(), point[i + 2].accessY() + 10), cv::Scalar(0, 100, 255), 1, 8,+0);
-    //     cv::line(tmp2, cv::Point(point[i + 2].accessX(), point[i + 2].accessY() - 5), cv::Point(point[i + 2].accessX(), point[i + 2].accessY() - 10), cv::Scalar(0, 100, 255), 1, 8,+0);
-
-    //     // cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(0, 255, 255), 1, 8, 0);
-    //     // cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 255, 255), 1, 8, 0);
-    //     cv::arrowedLine(tmp2, cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(255, 255, 0), 2, 8, 0);
-    //     //-- Right Turn or Left Turn Section
-    //     int det;
-    //     if (i == 0) {
-    //         det = determinant(point[i + 1].accessX(), point[i + 1].accessY(), point[i + 2].accessX(), point[i + 2].accessY(), originX, originY);
-    //     } else {
-    //         det = determinant(point[i + 1].accessX(), point[i + 1].accessY(), point[i + 2].accessX(), point[i + 2].accessY(), selectedX, selectedY);
-    //     }
-    //     cout << "\033[1;36mDelta of Gradients in Turn " << i << " :\033[0m " << det << endl;
-    //     if (det < 0) {
-    //         cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(255, 255, 0), 1, 8, 0);
-    //         cv::line(tmp, cv::Point(selectedX, selectedY), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(255, 255, 255), 1, 8, 0);
-    //         xConvex.push_back(point[i].accessX());
-    //         yConvex.push_back(point[i].accessY());
-    //         cv::line(tmp, cv::Point(xConvex[i], yConvex[i]), cv::Point(xConvex[i + 1], yConvex[i + 1]), cv::Scalar(255, 255, 255), 1, 8, 0);
-    //     } else if (det > 0) {
-    //         while(true) {
-    //             if (determinant(point[i - counter + 1].accessX(), point[i - counter + 1].accessY(), point[i + 2].accessX(), point[i + 2].accessY(), point[i - counter].accessX(), point[i - counter].accessY())) {
-    //                 cv::line(tmp2, cv::Point(xConvex[i], yConvex[i]), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 255, 0), 1, 8, 0);
-    //                 cv::line(tmp, cv::Point(selectedX, selectedY), cv::Point(point[i + 1].accessX(), point[i + 1].accessY()), cv::Scalar(255, 255, 255), 1, 8, 0);
-    //                 selectedX = point[i - counter].accessX();
-    //                 selectedY = point[i - counter].accessY();
-    //                 counter = 1;
-    //                 break;
-    //             } else {
-    //                 cv::line(tmp2, cv::Point(xConvex[i], yConvex[i]), cv::Point(point[i + 2].accessX(), point[i + 2].accessY()), cv::Scalar(0, 0, 255), 1, 8, 0);
-    //                 xConvex.pop_back();
-    //                 yConvex.pop_back();
-    //             }
-    //             xConvex.push_back(point[i - counter].accessX());
-    //             yConvex.push_back(point[i - counter].accessY());
-    //             counter++;
-    //             cv::imshow("output", tmp2);
-    //             cv::waitKey(1);
-    //         }
-            // cv::line(tmp, cv::Point(xConvex[i], yConvex[i]), cv::Point(xConvex[i - 1], yConvex[i - 1]), cv::Scalar(255, 255, 255), 1, 8, 0);
-            // cv::line(tmp2, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i - 1].accessX(), point[i - 1].accessY()), cv::Scalar(0, 0, 255), 1, 8, 0);
-            // cv::line(tmp, cv::Point(point[i].accessX(), point[i].accessY()), cv::Point(point[i - 2].accessX(), point[i - 2].accessY()), cv::Scalar(255, 255, 255), 1, 8, 0);
-        // } else if (det == 0) {
-            // int distFirst = sqrt(pow(point[i].accessX() - point[i + 1].accessX(), 2) + pow(point[i].accessY() - point[i + 1].accessY(), 2));
-            // int distSecond = sqrt(pow(point[i].accessX() - point[i + 2].accessX(), 2) + pow(point[i].accessY() - point[i + 2].accessY(), 2));
-            // if (distSecond > distFirst) {
-            //     xConvex.push_back(point[i + 2].accessX());
-            //     yConvex.push_back(point[i + 2].accessY());
-            // } else if (distSecond )
-        // } else {
-
-        // }
-        // cv::imshow("output", tmp2);
-        // cv::waitKey(0);
-    // }
-    // tmp.copyTo(tmp2);
-    // for (int i = 0; i < amount; i++) {
-    //     cv::line(tmp2, cv::Point(xConvex[i], yConvex[i]), cv::Point(xConvex[i - 1], yConvex[i - 1]), cv::Scalar(255, 50, 0), 1, 8, 0);
-    //     cv::imshow("output", tmp2);
-    //     cv::waitKey(1);
-    // }
     cv::destroyWindow("Creating Convex Hull");
     cout << "\033[1;37mConvex Hull Has Been Generated \033[1;32mSuccessfully\033[0m" << endl;
 }
@@ -550,47 +470,17 @@ int Points::accessTheta() {
     return theta;
 }
 
-void Points::import2ConvexHull(int inputX, int inputY) {
-    hullPointX = inputX;
-    hullPointY = inputY;
-}
-
 //-- Determinant Calculator
 long long int ConvexHull::determinant(int xSelected, int ySelected ,int xCHLast, int yCHLast, int xCHBeforeLast, int yCHBeforeLast) {
-    // int aX = xCHLast - xCHBeforeLast;
-    // int aY = yCHLast - yCHBeforeLast;
-    // int bX = xSelected - xCHLast;
-    // int bY = ySelected - yCHLast;
-    //-----
     int aX = xSelected - xCHLast;
     int aY = ySelected - yCHLast;
     int bX = xCHLast - xCHBeforeLast;
     int bY = yCHLast - yCHBeforeLast;
-    //-----
-    // int aX = xCHLast - xSelected;
-    // int aY = yCHLast - ySelected;
-    // int bX = xCHBeforeLast - xSelected;
-    // int bY = yCHBeforeLast - ySelected;
-    //-----
-    // int v1x = xCHLast - xCHBeforeLast;
-    // int v1y = yCHBeforeLast - yCHLast;
-    // int v2x = xSelected - xCHLast;
-    // int v2y = yCHLast - ySelected;
-    //-----
-    // int aX = xSelected - xCHLast;
-    // int aY = yCHLast - ySelected;
-    // int bX = xCHLast - xCHBeforeLast;
-    // int bY = yCHBeforeLast - yCHLast;
-    //-----
     long long int output = aX * bY - aY * bX;
-    // int output = aX * bY - aY * bX;
-    // int output = aY * bX - aX * bY;
-    // int output = v1x * v2y - v1y * v2x;
-    // int output = v1y * v2x - v1x * v2y;
-    //-----
     return output;
 }
 
+//-- Progress Bar of Process
 void ConvexHull::progressBar(int progressValue, string name) {
     int length = windowLength * 0.5;
     int width = windowWidth * 0.1;

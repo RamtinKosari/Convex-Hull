@@ -18,6 +18,7 @@ int main() {
     cout << "\033[1;32mAvalible Modes \033[0m:" << endl;
     cout << "\033[1;36m1- \033[0mConvex Hull on Dots" << endl;
     cout << "\033[1;36m2- \033[0mConvex Hull on Image" << endl;
+    cout << "\033[1;36m3- \033[0mConvex Hull on Live Camera" << endl;
     cout << endl;
     int choice;
     cout << "\033[1;33mChoice \033[0m: \033[1;32m"; cin >> choice;
@@ -48,7 +49,11 @@ int main() {
             cout << "\033[1;32mEnter Scale of the Image \033[0m: \033[1;37m"; cin >> scale;
             cout << "\033[0m" << endl;
             ConvexHull onImage(path, scale);
+            onImage.sobel();
             break;
+        }
+        case 3: {
+
         }
         default: {
             cout << "\033[1;31mError : \033[1;33mThere is No Option\033[1;31m " << choice << "\033[1;33m.\033[0m" << endl;

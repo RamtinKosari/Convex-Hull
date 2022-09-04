@@ -33,8 +33,6 @@ class Points {
         int x;
         int y;
         double theta;
-        int hullPointX;
-        int hullPointY;
     public:
         void setPosition(int, int, double);
         void setX(int);
@@ -43,13 +41,13 @@ class Points {
         int accessX();
         int accessY();
         int accessTheta();
-        void import2ConvexHull(int, int);
 };
 
 class ConvexHull : public Points {
     private:
         Points point[5000];
         cv::Mat preview;
+        cv::Mat process;
         cv::Mat bar;
         vector <int> xCoord;
         vector <int> yCoord;
@@ -59,6 +57,9 @@ class ConvexHull : public Points {
         vector <double> thetaConvex;
         double degreeStack[5000];
         int amount;
+        int scale;
+        int length;
+        int width;
         int originX;
         int originY;
         int originPlace;
@@ -67,6 +68,10 @@ class ConvexHull : public Points {
     public:
         ConvexHull(int &);
         ConvexHull(string &, int &);
+        void gaussianBlur();
+        void sobel();
+        void add to
+        void treshold();
         void findLowestPoint();
         void calculateTheta();
         void sortbyTheta();
